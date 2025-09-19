@@ -9,7 +9,7 @@ import java.util.*
 
 @Service
 class JwtService(
-    @param:Value("JWT_SECRET_BASE64") private val jwtSecret: String
+    @param:Value("\${JWT_SECRET_BASE64}") private val jwtSecret: String
 ) {
 
     private val secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret))
