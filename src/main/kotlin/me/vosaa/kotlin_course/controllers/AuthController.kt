@@ -1,5 +1,8 @@
 package me.vosaa.kotlin_course.controllers
 
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.Pattern
 import me.vosaa.kotlin_course.security.AuthService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -13,7 +16,13 @@ class AuthController(
 ) {
 
     data class AuthRequest(
-        val email: String, val password: String
+        @field:Email(message = "Invalid email format")
+        val email: String,
+        @field:Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{9,}\$",
+            message = "Password must be at least 9 characters long and contain at least one digit, uppercase and lowercase character"
+        )
+        val password: String
     )
 
     data class RefreshRequest(
@@ -22,7 +31,7 @@ class AuthController(
 
     @PostMapping("/register")
     fun register(
-        @RequestBody body: AuthRequest
+        @Valid @RequestBody body: AuthRequest
     ) {
         authService.register(email = body.email, password = body.password)
     }

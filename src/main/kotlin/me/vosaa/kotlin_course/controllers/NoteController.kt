@@ -1,5 +1,7 @@
 package me.vosaa.kotlin_course.controllers
 
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
 import me.vosaa.kotlin_course.controllers.NoteController.NoteResponse
 import me.vosaa.kotlin_course.database.model.Note
 import me.vosaa.kotlin_course.database.repository.NoteRepository
@@ -16,7 +18,7 @@ class NoteController(
 
     data class NoteRequest(
         val id: String?,
-        val title: String,
+        @field:NotBlank(message = "Title can't be blank") val title: String,
         val content: String,
         val color: Long
     )
@@ -31,21 +33,18 @@ class NoteController(
 
     @PostMapping
     fun save(
-        @RequestBody body: NoteRequest
+        @Valid @RequestBody body: NoteRequest
     ): NoteResponse {
         val ownerId = SecurityContextHolder.getContext().authentication.principal as String
         val note = noteRepository.save(
-            Note(
-                id = body.id?.let {
-                    ObjectId(it)
-                } ?: ObjectId.get(),
-                title = body.title,
-                content = body.content,
-                color = body.color,
-                createdAt = Instant.now(),
-                ownerId = ObjectId(ownerId)
-            )
-        )
+            Note(id = body.id?.let {
+            ObjectId(it)
+        } ?: ObjectId.get(),
+            title = body.title,
+            content = body.content,
+            color = body.color,
+            createdAt = Instant.now(),
+            ownerId = ObjectId(ownerId)))
         return note.toResponse()
     }
 
@@ -61,17 +60,12 @@ class NoteController(
             IllegalArgumentException("Note not found .")
         }
         val ownerId = SecurityContextHolder.getContext().authentication.principal as String
-        if (note.ownerId.toHexString() == ownerId)
-            noteRepository.deleteById(ObjectId(id))
+        if (note.ownerId.toHexString() == ownerId) noteRepository.deleteById(ObjectId(id))
     }
 }
 
 private fun Note.toResponse(): NoteResponse {
     return NoteResponse(
-        id = id.toHexString(),
-        title = title,
-        content = content,
-        color = color,
-        createdAt = createdAt
+        id = id.toHexString(), title = title, content = content, color = color, createdAt = createdAt
     )
 }

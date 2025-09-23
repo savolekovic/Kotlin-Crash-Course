@@ -5,8 +5,11 @@ import me.vosaa.kotlin_course.database.model.User
 import me.vosaa.kotlin_course.database.repository.RefreshTokenRepository
 import me.vosaa.kotlin_course.database.repository.UserRepository
 import org.bson.types.ObjectId
+import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.stereotype.Service
+import org.springframework.web.server.ResponseStatusException
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.*
@@ -25,6 +28,10 @@ class AuthService(
     )
 
     fun register(email: String, password: String): User {
+        val user = userRepository.findByEmail(email.trim())
+        if(user != null)
+            throw ResponseStatusException(HttpStatus.CONFLICT, "A user with that email already exists.")
+
         return userRepository.save(
             User(
                 email = email,
@@ -56,18 +63,18 @@ class AuthService(
 
     fun refresh(refreshToken: String): TokenPair {
         if (!jwtService.validateRefreshToken(refreshToken))
-            throw IllegalArgumentException("Invalid refresh token.")
+            throw ResponseStatusException(HttpStatusCode.valueOf(401), "Invalid refresh token.")
 
         val userId = jwtService.getUserIdFromToken(refreshToken)
         val user = userRepository.findById(ObjectId(userId)).orElseThrow {
-            IllegalArgumentException("Invalid refresh token.")
+            ResponseStatusException(HttpStatusCode.valueOf(401),"Invalid refresh token.")
         }
 
         val hashed = hashToken(refreshToken)
         refreshTokenRepository.findByUserIdAndHashedToken(
             userId = user.id,
             hashedToken = hashed
-        ) ?: throw IllegalArgumentException("Refresh token not recognized")
+        ) ?: throw ResponseStatusException(HttpStatusCode.valueOf(401),"Refresh token not recognized")
 
         refreshTokenRepository.deleteByUserIdAndHashedToken(
             userId = user.id,
